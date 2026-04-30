@@ -5,7 +5,7 @@
 #include "Enrutador.h"
 #include <map>
 #include <string>
-#include <list> // NECESARIO PARA std::list
+#include <list>
 
 class Red {
 private:
