@@ -1,105 +1,245 @@
 #include "Red.h"
+
 #include <iostream>
 #include <fstream>
 
 #include <queue>
 #include <limits>
 #include <list>
-
+#include <vector>
 
 const int INF = std::numeric_limits<int>::max();
 
+
+// Destructor
 Red::~Red() {
+
     for (auto const& [nombre, enrutador] : enrutadores) {
         delete enrutador;
     }
 }
 
+
+// Agregar router
 void Red::agregarEnrutador(std::string nombre) {
+
     if (enrutadores.find(nombre) == enrutadores.end()) {
         enrutadores[nombre] = new Enrutador(nombre);
     }
 }
 
-void Red::conectar(std::string origen, std::string destino, int costo) {
-    if (enrutadores.count(origen) && enrutadores.count(destino)) {
+
+// Eliminar router
+void Red::eliminarEnrutador(std::string nombre) {
+
+    if (!enrutadores.count(nombre)) {
+        std::cout << "Router no encontrado.\n";
+        return;
+    }
+
+    // Eliminar referencias
+    for (auto const& [n, r] : enrutadores) {
+        r->eliminarVecino(nombre);
+    }
+
+    delete enrutadores[nombre];
+    enrutadores.erase(nombre);
+
+    std::cout << "[SISTEMA] Router eliminado correctamente.\n";
+}
+
+
+// Conectar routers
+void Red::conectar(std::string origen,
+                   std::string destino,
+                   int costo) {
+
+    if (enrutadores.count(origen) &&
+        enrutadores.count(destino)) {
+
         enrutadores[origen]->agregarVecino(destino, costo);
         enrutadores[destino]->agregarVecino(origen, costo);
     }
 }
 
-void Red::desconectar(std::string n1, std::string n2) {
-    if (enrutadores.count(n1) && enrutadores.count(n2)) {
+
+// Eliminar enlace
+void Red::desconectar(std::string n1,
+                      std::string n2) {
+
+    if (enrutadores.count(n1) &&
+        enrutadores.count(n2)) {
+
         enrutadores[n1]->eliminarVecino(n2);
         enrutadores[n2]->eliminarVecino(n1);
-        std::cout << "[SISTEMA] Enlace entre " << n1 << " e " << n2 << " eliminado." << std::endl;
-    } else {
-        std::cout << "[ERROR] No se pudo eliminar el enlace." << std::endl;
+
+        std::cout << "[SISTEMA] Enlace eliminado.\n";
     }
 }
 
+
+// Cargar desde TXT
 void Red::cargarDesdeArchivo(std::string nombreArchivo) {
+
     std::ifstream archivo(nombreArchivo);
-    std::string origen, destino;
+
+    std::string origen;
+    std::string destino;
+
     int costo;
 
     if (!archivo.is_open()) {
-        std::cerr << "Error: No se pudo abrir el archivo " << nombreArchivo << std::endl;
+
+        std::cout << "Error al abrir archivo.\n";
         return;
     }
 
     while (archivo >> origen >> destino >> costo) {
+
         agregarEnrutador(origen);
         agregarEnrutador(destino);
+
         conectar(origen, destino, costo);
     }
+
     archivo.close();
-    std::cout << "[SISTEMA] Red cargada exitosamente." << std::endl;
+
+    std::cout << "[SISTEMA] Topologia cargada correctamente.\n";
 }
 
-void Red::calcularMejorRuta(std::string origen, std::string destino) {
-    if (!enrutadores.count(origen) || !enrutadores.count(destino)) {
-        std::cout << "Nodos no validos." << std::endl;
+
+// Mostrar conexiones
+void Red::mostrarRed() {
+
+    std::cout << "\n===== TOPOLOGIA =====\n";
+
+    for (auto const& [nombre, router] : enrutadores) {
+
+        std::cout << "\nRouter " << nombre << "\n";
+
+        for (auto const& [vecino, costo] :
+             router->getVecinos()) {
+
+            std::cout << " -> "
+                      << vecino
+                      << " (Costo: "
+                      << costo
+                      << ")\n";
+        }
+    }
+}
+
+
+// Dijkstra
+void Red::calcularMejorRuta(std::string origen,
+                            std::string destino) {
+
+    if (!enrutadores.count(origen) ||
+        !enrutadores.count(destino)) {
+
+        std::cout << "Nodos invalidos.\n";
         return;
     }
 
     std::map<std::string, int> distancias;
+
     std::map<std::string, std::string> predecesor;
-    for (auto const& [nom, e] : enrutadores) distancias[nom] = INF;
+
+    for (auto const& [nom, e] : enrutadores) {
+        distancias[nom] = INF;
+    }
 
     distancias[origen] = 0;
 
-
-    std::priority_queue<std::pair<int, std::string>, std::vector<std::pair<int, std::string>>, std::greater<std::pair<int, std::string>>> pq;
+    std::priority_queue<
+        std::pair<int, std::string>,
+        std::vector<std::pair<int, std::string>>,
+        std::greater<std::pair<int, std::string>>
+    > pq;
 
     pq.push({0, origen});
 
     while (!pq.empty()) {
+
         std::string u = pq.top().second;
+
         pq.pop();
 
-        for (auto const& [v, costo] : enrutadores[u]->getVecinos()) {
-            if (distancias[u] != INF && distancias[u] + costo < distancias[v]) {
-                distancias[v] = distancias[u] + costo;
+        for (auto const& [v, costo] :
+             enrutadores[u]->getVecinos()) {
+
+            if (distancias[u] != INF &&
+                distancias[u] + costo < distancias[v]) {
+
+                distancias[v] =
+                    distancias[u] + costo;
+
                 predecesor[v] = u;
+
                 pq.push({distancias[v], v});
             }
         }
     }
 
     if (distancias[destino] == INF) {
-        std::cout << "No hay camino posible entre " << origen << " y " << destino << "." << std::endl;
-    } else {
-        std::list<std::string> camino;
-        for (std::string en = destino; en != ""; en = predecesor[en]) {
-            camino.push_front(en);
-            if (en == origen) break;
-        }
 
-        std::cout << "Camino mas corto: ";
-        for (const auto& nodo : camino) {
-            std::cout << nodo << (nodo == destino ? "" : " -> ");
+        std::cout << "No existe ruta.\n";
+        return;
+    }
+
+    std::list<std::string> camino;
+
+    std::string actual = destino;
+
+    while (actual != origen) {
+
+        camino.push_front(actual);
+
+        actual = predecesor[actual];
+    }
+
+    camino.push_front(origen);
+
+    std::cout << "\n===== MEJOR RUTA =====\n";
+
+    for (auto it = camino.begin();
+         it != camino.end();
+         ++it) {
+
+        std::cout << *it;
+
+        auto siguiente = it;
+        ++siguiente;
+
+        if (siguiente != camino.end()) {
+            std::cout << " -> ";
         }
-        std::cout << "\nCosto total: " << distancias[destino] << std::endl;
+    }
+
+    std::cout << "\nCosto total: "
+              << distancias[destino]
+              << "\n";
+}
+
+
+// Mostrar tablas
+void Red::mostrarTablaCostos() {
+
+    std::cout << "\n===== TABLAS DE COSTOS =====\n";
+
+    for (auto const& [origen, router] : enrutadores) {
+
+        std::cout << "\nRouter " << origen << "\n";
+
+        for (auto const& [destino, costo] :
+             router->getVecinos()) {
+
+            std::cout << origen
+                      << " -> "
+                      << destino
+                      << " = "
+                      << costo
+                      << "\n";
+        }
     }
 }
