@@ -243,3 +243,47 @@ void Red::mostrarTablaCostos() {
         }
     }
 }
+
+void Red::mostrarMatrizCostos() {
+    std::cout << "\n===== MATRIZ DE COSTOS MINIMOS =====\n";
+
+    std::cout << "\t";
+    for (auto const& [nombre, e] : enrutadores) {
+        std::cout << nombre << "\t";
+    }
+    std::cout << "\n";
+
+    for (auto const& [origen, router] : enrutadores) {
+
+        std::map<std::string, int> distancias;
+        for (auto const& [nom, e] : enrutadores) {
+            distancias[nom] = INF;
+        }
+        distancias[origen] = 0;
+
+        std::priority_queue<std::pair<int,std::string>, std::vector<std::pair<int,std::string>>, std::greater<std::pair<int,std::string>>> pq;
+        pq.push({0, origen});
+
+        while (!pq.empty()) {
+            std::string u = pq.top().second;
+            pq.pop();
+            for (auto const& [v, costo] : enrutadores[u]->getVecinos()) {
+                if (distancias[u] != INF && distancias[u] + costo < distancias[v]) {
+                    distancias[v] = distancias[u] + costo;
+                    pq.push({distancias[v], v});
+                }
+            }
+        }
+
+        std::cout << origen << "\t";
+        for (auto const& [destino, e] : enrutadores) {
+            if (distancias[destino] == INF)
+                std::cout << "INF\t";
+            else
+                std::cout << distancias[destino] << "\t";
+        }
+        std::cout << "\n";
+    }
+}
+
+

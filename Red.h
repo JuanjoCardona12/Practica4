@@ -32,6 +32,7 @@ public:
     // Mostrar informacion
     void mostrarRed();
     void mostrarTablaCostos();
+    void mostrarMatrizCostos();
 };
 
 #endif
