@@ -4,11 +4,11 @@
 #include <fstream>
 
 #include <queue>
-#include <limits>
+#include <limits>  //obtener valor max de un entero
 #include <list>
 #include <vector>
 
-const int INF = std::numeric_limits<int>::max();
+const int INF = std::numeric_limits<int>::max(); //representa infinito
 
 
 // Destructor
@@ -23,14 +23,14 @@ Red::~Red() {
 // Agregar router
 void Red::agregarEnrutador(std::string nombre) {
 
-    if (enrutadores.find(nombre) == enrutadores.end()) {
+    if (enrutadores.find(nombre) == enrutadores.end()) { //si find retorna enrutadores.end es porque no encontro
         enrutadores[nombre] = new Enrutador(nombre);
     }
 }
 
 
 // Eliminar router
-void Red::eliminarEnrutador(std::string nombre) {
+void Red::eliminarEnrutador(std::string nombre) {  //verificacion
 
     if (!enrutadores.count(nombre)) {
         std::cout << "Router no encontrado.\n";
@@ -42,6 +42,7 @@ void Red::eliminarEnrutador(std::string nombre) {
         r->eliminarVecino(nombre);
     }
 
+    //Liberar memoria y borrar del map:
     delete enrutadores[nombre];
     enrutadores.erase(nombre);
 
@@ -54,6 +55,7 @@ void Red::conectar(std::string origen,
                    std::string destino,
                    int costo) {
 
+    //verifica que existan ambos enrutadores
     if (enrutadores.count(origen) &&
         enrutadores.count(destino)) {
 
@@ -88,19 +90,21 @@ void Red::cargarDesdeArchivo(std::string nombreArchivo) {
 
     int costo;
 
+    //verifica que abrio
     if (!archivo.is_open()) {
 
         std::cout << "Error al abrir archivo.\n";
         return;
     }
 
+    //Leer linea por linea
     while (archivo >> origen >> destino >> costo) {
 
         agregarEnrutador(origen);
         agregarEnrutador(destino);
 
         conectar(origen, destino, costo);
-    }
+    }   //lee de tres en tres valores
 
     archivo.close();
 
@@ -113,7 +117,7 @@ void Red::mostrarRed() {
 
     std::cout << "\n===== TOPOLOGIA =====\n";
 
-    for (auto const& [nombre, router] : enrutadores) {
+    for (auto const& [nombre, router] : enrutadores) { //recorre todos los enrutadores
 
         std::cout << "\nRouter " << nombre << "\n";
 
@@ -134,6 +138,7 @@ void Red::mostrarRed() {
 void Red::calcularMejorRuta(std::string origen,
                             std::string destino) {
 
+    //verifica que ambos nodos existan
     if (!enrutadores.count(origen) ||
         !enrutadores.count(destino)) {
 
@@ -151,14 +156,16 @@ void Red::calcularMejorRuta(std::string origen,
 
     distancias[origen] = 0;
 
+    //cola de prioridad
     std::priority_queue<
         std::pair<int, std::string>,
         std::vector<std::pair<int, std::string>>,
-        std::greater<std::pair<int, std::string>>
+        std::greater<std::pair<int, std::string>> //greater invierte: cola de minimos, por defecto es max
     > pq;
 
     pq.push({0, origen});
 
+    //algoritmo
     while (!pq.empty()) {
 
         std::string u = pq.top().second;
@@ -187,6 +194,7 @@ void Red::calcularMejorRuta(std::string origen,
         return;
     }
 
+    //reconstruccion del camino
     std::list<std::string> camino;
 
     std::string actual = destino;
